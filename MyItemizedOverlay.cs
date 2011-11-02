@@ -14,7 +14,37 @@ using Android.Graphics.Drawables;
 
 namespace MonoDroid.GoogleMapsDemo
 {
-    class MyItemizedOverlay : ItemizedOverlay
+    [Register("com/google/android/maps/ItemizedOverlay", DoNotGenerateAcw = true)]
+    abstract class FixedItemizedOverlay : ItemizedOverlay
+    {
+
+        [Register("<init>", "(Landroid/graphics/drawable/Drawable;)V", "")]
+        public FixedItemizedOverlay(Android.Graphics.Drawables.Drawable defaultMarker)
+            : base(defaultMarker)
+        {
+        }
+
+        [Register("createItem", "(I)Lcom/google/android/maps/OverlayItem;", "GetCreateItemHelper")]
+        protected abstract OverlayItem CreateItem(int index);
+
+        static Delegate cb_CreateItem;
+        static Delegate GetCreateItemHelper()
+        {
+            if (cb_CreateItem == null)
+                cb_CreateItem = JNINativeWrapper.CreateDelegate((Func<IntPtr, IntPtr, int, IntPtr>)_CreateItem);
+
+            return cb_CreateItem;
+        }
+
+        static IntPtr _CreateItem(IntPtr env, IntPtr __self, int index)
+        {
+            FixedItemizedOverlay self = Java.Lang.Object.GetObject<FixedItemizedOverlay>(__self, JniHandleOwnership.DoNotTransfer);
+            OverlayItem value = self.CreateItem(index);
+            return JNIEnv.ToJniHandle(value);
+        }
+    }
+
+    class MyItemizedOverlay : FixedItemizedOverlay
     {
         private List<OverlayItem> overlayItems = new List<OverlayItem>();
         private Context context;
@@ -53,9 +83,9 @@ namespace MonoDroid.GoogleMapsDemo
             return true;
         }
 
-        /*public override OverlayItem CreateItem(int index)
+        protected override OverlayItem CreateItem(int index)
         {
             return overlayItems.ElementAt(index);
-        }*/
+        }
     }
 }
